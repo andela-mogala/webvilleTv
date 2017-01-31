@@ -1,7 +1,8 @@
 const videos = { video1: 'video/demovideo1', video2: 'video/demovideo2' }
 
+
 function getFormatExtension() {
-  const video = document.getElementById('video')
+  let video = document.getElementById('video')
   if (video.canPlayType("video/mp4")) {
     return ".mp4";
   }else if (video.canPlayType("video/webm")) {
@@ -12,7 +13,7 @@ function getFormatExtension() {
 }
 
 window.onload = () => {
-  const video = document.getElementById('video')
+  let video = document.getElementById('video')
   video.src = videos.video1 + getFormatExtension()
   video.load()
 
@@ -33,27 +34,37 @@ window.onload = () => {
 
   pushUnpushButtons('video1', [])
   pushUnpushButtons('normal', [])
+
+  video.addEventListener('ended', endedHandler, false)
 }
 
 function handleControl(event) {
   const id = event.target.getAttribute('id')
+  let video = document.getElementById('video')
 
   if (id === 'play') {
     pushUnpushButtons('play', ['pause'])
+    if (video.ended) {
+      video.load()
+    }
+    video.play()
   } else if (id === 'pause') {
     pushUnpushButtons('pause', ['play'])
+    video.pause()
   } else if (id === 'loop') {
     if (isButtonPushed('loop')) {
       pushUnpushButtons('', ['loop'])
     } else {
       pushUnpushButtons('loop', [])
     }
+    video.loop = !video.loop
   } else if (id === 'mute') {
     if (isButtonPushed('mute')) {
       pushUnpushButtons('', ['mute'])
     } else {
       pushUnpushButtons('mute', [])
     }
+    video.muted = !video.muted
   }
 }
 
@@ -73,11 +84,18 @@ function setEffect(event) {
 
 function setVideo(event) {
   const id = event.target.getAttribute('id')
+  const video = document.getElementById('video')
+
   if (id === 'video1') {
     pushUnpushButtons('video1', ['video2'])
   } else if (id === 'video2') {
     pushUnpushButtons('video2', ['video1'])
   }
+  video.src = videos[id] + getFormatExtension()
+  video.load()
+  video.play()
+
+  pushUnpushButtons('play', ['pause'])
 }
 
 function pushUnpushButtons(idToPush, idArrayToUnpush) {
@@ -110,4 +128,8 @@ function isButtonPushed(id) {
   let anchor = document.getElementById(id)
   let theClass = anchor.getAttribute('class')
   return (theClass.indexOf('selected') >= 0)
+}
+
+function endedHandler() {
+  pushUnpushButtons('', ['play'])
 }
