@@ -1,5 +1,5 @@
 const videos = { video1: 'video/demovideo1', video2: 'video/demovideo2' }
-
+let effectFunction = null
 
 function getFormatExtension() {
   let video = document.getElementById('video')
@@ -36,6 +36,7 @@ window.onload = () => {
   pushUnpushButtons('normal', [])
 
   video.addEventListener('ended', endedHandler, false)
+  video.addEventListener('play', processFrame, false)
 }
 
 function handleControl(event) {
@@ -73,13 +74,17 @@ function setEffect(event) {
 
   if (id === 'normal') {
     pushUnpushButtons('normal', ['western', 'noir', 'scifi'])
+    effectFunction = null
   } else if (id === 'western') {
     pushUnpushButtons('western', ['normal', 'noir', 'scifi'])
+    effectFunction = western
   } else if (id === 'noir') {
     pushUnpushButtons('noir', ['normal', 'western', 'scifi'])
+    effectFunction = noir
   } else if (id === 'scifi') {
     pushUnpushButtons('scifi', ['normal', 'western', 'noir'])
-  }
+    effectFunction = scifi
+    }
 }
 
 function setVideo(event) {
@@ -133,3 +138,43 @@ function isButtonPushed(id) {
 function endedHandler() {
   pushUnpushButtons('', ['play'])
 }
+
+function processFrame() {
+  const video = document.getElementById('video')
+  if (video.paused || video.ended) {
+    return
+  }
+
+  const bufferCanvas = document.getElementById('buffer')
+  const displayCanvas = document.getElementById('display')
+  const buffer = bufferCanvas.getContext('2d')
+  const display = displayCanvas.getContext('2d')
+
+  buffer.drawImage(video, 0, 0, bufferCanvas.width, bufferCanvas.height)
+  const frame = buffer.getImageData(0, 0, bufferCanvas.width, bufferCanvas.height)
+
+  // to know how many pixels we have to loop through in the frame data array we need to
+  // divide the length of the array by 4 because 1 pixel occupies 4 spaces
+  // in the array(rgba)
+  var pixelCount = frame.data.length / 4
+
+  for (let i = 0; i <pixelCount; i++) {
+    let r = frame.data[i * 4 + 0]
+    let g = frame.data[i * 4 + 1]
+    let b = frame.data[i * 4 + 2]
+    if (effectFunction) {
+      effectFunction(i, r, g, b, frame.data)
+    }
+  }
+  display.putImageData(frame, 0, 0)
+  setTimeout(processFrame, 0)
+}
+
+function noir(pos, r, g, b, data) {
+  let brightness = (3 * r + 4 * g + b) >>> 3
+  if (brightness < 0) brightness = 0
+    data[pos * 4 + 0] = brightness
+    data[pos * 4 + 1] = brightness
+    data[pos * 4 + 2] = brightness
+}
+
